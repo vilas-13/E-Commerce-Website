@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>E-Commerce API Frontend</h1>
+    
+    <div class="section">
+        <h2>Authentication</h2>
+        <div>
+            <h3>Register</h3>
+            <input type="text" id="registerUsername" placeholder="Username">
+            <input type="email" id="registerEmail" placeholder="Email">
+            <input type="password" id="registerPassword" placeholder="Password">
+            <button onclick="register()">Register</button>
+        </div>
+        <div>
+            <h3>Login</h3>
+            <input type="text" id="loginUsername" placeholder="Username">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+        <div id="tokenDisplay" style="margin-top: 10px;"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Products</h2>
+        <button onclick="getProducts()">Get All Products</button>
+        <button onclick="searchProducts()">Search Products</button>
+        <div id="productsResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Cart</h2>
+        <button onclick="getCart()">Get Cart</button>
+        <button onclick="addToCart()">Add to Cart</button>
+        <div id="cartResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Orders</h2>
+        <button onclick="createOrder()">Create Order</button>
+        <button onclick="getOrders()">Get My Orders</button>
+        <div id="ordersResult"></div>
+    </div>
+    
+    <script>
+        let token = '';
+        
+        function displayResponse(elementId, data) {
+            document.getElementById(elementId).innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        
+        async function makeRequest(url, method, body = null) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const options = {
+                method,
+                headers
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error:', error);
+                return { error: error.message };
+            }
+        }
+        
+        function register() {
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            makeRequest('/api/auth/register', 'POST', { username, email, password })
+                .then(data => {
+                    displayResponse('tokenDisplay', data);
+                    if (data.token) {
+                        token = data.token;
+                    }
+                });
+        }
+        
+        function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            makeRequest('/api/auth/authenticate', 'POST', { username, password })
+                .then(data => {
+                    displayResponse('tokenDisplay', data);
+                    if (data.token) {
+                        token = data.token;
+                    }
+                });
+        }
+        
+        function getProducts() {
+            makeRequest('/api/products?page=0&size=5', 'GET')
+                .then(data => displayResponse('productsResult', data));
+        }
+        
+        function searchProducts() {
+            makeRequest('/api/products/search?name=lap&page=0&size=5', 'GET')
+                .then(data => displayResponse('productsResult', data));
+        }
+        
+        function getCart() {
+            makeRequest('/api/cart', 'GET')
+                .then(data => displayResponse('cartResult', data));
+        }
+        
+        function addToCart() {
+            // Assuming product with ID 1 exists
+            makeRequest('/api/cart/items', 'POST', { productId: 1, quantity: 1 })
+                .then(data => displayResponse('cartResult', data));
+        }
+        
+        function createOrder() {
+            makeRequest('/api/orders', 'POST')
+                .then(data => displayResponse('ordersResult', data));
+        }
+        
+        function getOrders() {
+            makeRequest('/api/orders', 'GET')
+                .then(data => displayResponse('ordersResult', data));
+        }
+    </script>
+</body>
+</html>
